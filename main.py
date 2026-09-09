@@ -4,102 +4,159 @@ import re
 import requests
 import streamlit as st
 
-st.set_page_config(page_title="핑크빛 학교 급식 달력", page_icon="🌸", layout="wide")
+st.set_page_config(
+    page_title="코스믹 갤럭틱 급식 달력 🌌",
+    page_icon="🚀",
+    layout="wide",
+)
 
 # -----------------------------------------------------------------------------
-# 🌸 Pink Theme Custom CSS Injection
+# 🌌 ULTRA COSMIC CYBERPUNK CUSTOM CSS
 # -----------------------------------------------------------------------------
-pink_theme_css = """
+cosmic_css = """
 <style>
-    /* 전체 배경 */
+    /* 1. 우주 배경 애니메이션 */
+    @keyframes stars {
+        0% { background-position: 0 0; }
+        100% { background-position: 1000px 1000px; }
+    }
+    
+    @keyframes pulseGlow {
+        0% { box-shadow: 0 0 15px rgba(255, 0, 128, 0.4), 0 0 30px rgba(0, 255, 255, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(255, 0, 128, 0.8), 0 0 50px rgba(0, 255, 255, 0.5); }
+        100% { box-shadow: 0 0 15px rgba(255, 0, 128, 0.4), 0 0 30px rgba(0, 255, 255, 0.2); }
+    }
+
     .stApp {
-        background: linear-gradient(135deg, #fff5f7 0%, #fdebed 100%);
+        background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+        color: #e0e6ed;
         font-family: 'Pretendard', sans-serif;
     }
-    
-    /* 사이드바 스타일링 */
+
+    /* 2. 사이드바 (글래스모피즘 + 사이버네온) */
     [data-testid="stSidebar"] {
-        background-color: #fff0f3 !important;
-        border-right: 1px solid #ffccd5;
-    }
-    
-    /* 타이틀 및 헤더 핑크 톤 설정 */
-    h1 {
-        color: #d63384 !important;
-        font-weight: 800 !important;
-        text-shadow: 1px 1px 2px #ffc0cb;
-    }
-    h2, h3, h4 {
-        color: #e64980 !important;
-    }
-    
-    /* 급식 카드 (Streamlit Container) 핑크 디자인 */
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #ffffff;
-        border: 2px solid #ffccd5 !important;
-        border-radius: 16px !important;
-        box-shadow: 0px 4px 12px rgba(255, 182, 193, 0.25);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    [data-testid="stVerticalBlockBorderWrapper"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0px 6px 16px rgba(255, 105, 180, 0.3);
-        border-color: #ff85a1 !important;
+        background: rgba(15, 12, 41, 0.75) !important;
+        backdrop-filter: blur(12px);
+        border-right: 2px solid #ff007f !important;
+        box-shadow: 5px 0 25px rgba(255, 0, 127, 0.3);
     }
 
-    /* TODAY 배지 핑크 디자인 */
-    .today-badge {
-        background-color: #ff6b8b;
-        color: white;
-        padding: 3px 8px;
-        border-radius: 12px;
+    /* 3. 화려한 우주 타이틀 (그라데이션 텍스트) */
+    .cosmic-title {
+        font-size: 2.8rem;
+        font-weight: 900;
+        text-align: center;
+        background: linear-gradient(90deg, #ff007f, #7928ca, #00dfd8, #ff007f);
+        background-size: 300% 300%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: gradientShift 6s ease infinite;
+        margin-bottom: 5px;
+        text-shadow: 0 0 20px rgba(255, 0, 127, 0.5);
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .cosmic-subtitle {
+        text-align: center;
+        color: #00f0ff;
+        font-size: 1.1rem;
+        letter-spacing: 2px;
+        margin-bottom: 25px;
+        text-shadow: 0 0 8px #00f0ff;
+    }
+
+    /* 4. 카드 컨테이너 (시공간 카드) */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(20, 24, 45, 0.65) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 240, 255, 0.3) !important;
+        border-radius: 20px !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    [data-testid="stVerticalBlockBorderWrapper"]:hover {
+        transform: translateY(-8px) scale(1.02);
+        border-color: #ff007f !important;
+        animation: pulseGlow 2s infinite;
+    }
+
+    /* 5. TODAY (현재 시공간) 배지 */
+    .space-today-badge {
+        background: linear-gradient(45deg, #ff007f, #7928ca);
+        color: #ffffff;
+        padding: 4px 10px;
+        border-radius: 20px;
         font-size: 0.75rem;
         font-weight: bold;
-        box-shadow: 0 2px 5px rgba(255, 107, 139, 0.4);
+        letter-spacing: 1px;
+        box-shadow: 0 0 10px #ff007f;
+        display: inline-block;
     }
 
-    /* 식단 분류 타이틀 (중식 / 석식 등) */
-    .meal-title-lunch {
-        color: #ff477e;
-        font-weight: bold;
-        font-size: 0.95rem;
-    }
-    .meal-title-dinner {
-        color: #b5179e;
-        font-weight: bold;
-        font-size: 0.95rem;
-    }
-    .meal-title-other {
-        color: #f72585;
-        font-weight: bold;
-        font-size: 0.95rem;
+    /* 6. 에너지(칼로리) 배지 */
+    .energy-badge {
+        background: rgba(0, 240, 255, 0.15);
+        border: 1px solid #00f0ff;
+        color: #00f0ff;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-shadow: 0 0 5px #00f0ff;
     }
 
-    /* 칼로리 텍스트 스타일 */
-    .cal-text {
-        font-size: 0.8rem;
-        color: #ff85a1;
-        font-weight: 500;
+    /* 7. 식단 타이틀 텍스트 */
+    .lunch-title {
+        color: #ff007f;
+        font-weight: 800;
+        font-size: 1.05rem;
+        text-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
+    }
+    .dinner-title {
+        color: #7928ca;
+        font-weight: 800;
+        font-size: 1.05rem;
+        text-shadow: 0 0 10px rgba(121, 40, 202, 0.6);
     }
 
-    /* 구분선 컬러 */
+    /* 8. 메뉴 텍스트 */
+    .dish-item {
+        color: #e2e8f0;
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+
+    /* 알레르기 네온 태그 */
+    .allergy-tag {
+        color: #ff007f;
+        font-size: 0.75rem;
+        font-weight: bold;
+        text-shadow: 0 0 5px #ff007f;
+    }
+
     hr {
-        border-color: #ffccd5 !important;
-    }
-
-    /* 라디오 버튼 / 토글 / 입력을 핑크 Accent로 강조 */
-    div[data-baseweb="radio"] div {
-        color: #d63384 !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
     }
 </style>
 """
-st.markdown(pink_theme_css, unsafe_allow_html=True)
+st.markdown(cosmic_css, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 🌸 UI Header
+# 🚀 HEADER
 # -----------------------------------------------------------------------------
-st.title("🌸 우리 학교 핑크 급식 달력")
-st.caption("선택한 월의 급식 메뉴를 달콤한 핑크 테마 달력으로 한눈에 확인해보세요 💕")
+st.markdown(
+    "<div class='cosmic-title'>🛸 GALACTIC MEAL SYSTEM</div>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "<div class='cosmic-subtitle'>✨ 은하계 최고의 맛! 우주적 급식 오디세이 ✨</div>",
+    unsafe_allow_html=True,
+)
 
 ALLERGY_MAP = {
     1: "난류",
@@ -125,7 +182,6 @@ ALLERGY_MAP = {
 
 
 def replace_allergy_codes(dish_text, convert_to_text=True):
-    """메뉴명 뒤의 알레르기 번호를 감지하여 한글 식재료명으로 치환합니다."""
     if not convert_to_text or not dish_text:
         return dish_text
 
@@ -134,7 +190,7 @@ def replace_allergy_codes(dish_text, convert_to_text=True):
         nums = re.findall(r"\d+", raw)
         allergens = [ALLERGY_MAP[int(n)] for n in nums if int(n) in ALLERGY_MAP]
         if allergens:
-            return f" <span style='color:#ff6584; font-size:0.8rem;'>[{', '.join(allergens)}]</span>"
+            return f" <span class='allergy-tag'>[{', '.join(allergens)}]</span>"
         return raw
 
     pattern = r"\(?(\d+\.)+\)?"
@@ -142,9 +198,9 @@ def replace_allergy_codes(dish_text, convert_to_text=True):
 
 
 # -----------------------------------------------------------------------------
-# 🎀 Sidebar Settings
+# 🛸 SIDEBAR (기지 제어반)
 # -----------------------------------------------------------------------------
-st.sidebar.header("⚙️ 학교 정보 설정")
+st.sidebar.markdown("### 🛰️ 행성 기지 좌표 설정")
 office_code = st.sidebar.text_input(
     "시도교육청코드", value="T10", help="기본값: 제주특별자치도교육청(T10)"
 )
@@ -153,33 +209,33 @@ school_code = st.sidebar.text_input(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🍽️ 알레르기 표시 설정")
+st.sidebar.markdown("### 🧪 항원 스캐너 (알레르기)")
 show_allergen_names = st.sidebar.toggle(
-    "알레르기 식품명으로 변환",
+    "알레르기 물질 감지 레이더",
     value=True,
-    help="체크 시 숫자 대신 [난류, 대두] 형태로 변환하여 표시합니다.",
+    help="체크 시 숫자 코드 대신 우주 식재료명으로 자동 치환합니다.",
 )
 
-with st.sidebar.expander("📖 나이스 알레르기 번호 안내표"):
+with st.sidebar.expander("📖 코스믹 알레르기 식별표"):
     table_md = "\n".join([f"- **{k}번**: {v}" for k, v in ALLERGY_MAP.items()])
     st.markdown(table_md)
 
 # -----------------------------------------------------------------------------
-# 🗓️ Controls & Filters
+# 🧭 CONTROLS
 # -----------------------------------------------------------------------------
 today = datetime.date.today()
 col_y, col_m, col_filter = st.columns([1, 1, 2])
 with col_y:
     year = st.selectbox(
-        "연도 선택", options=list(range(today.year - 1, today.year + 2)), index=1
+        "시공간 연도", options=list(range(today.year - 1, today.year + 2)), index=1
     )
 with col_m:
     month = st.selectbox(
-        "월 선택", options=list(range(1, 13)), index=today.month - 1
+        "궤도 월", options=list(range(1, 13)), index=today.month - 1
     )
 with col_filter:
     meal_filter = st.radio(
-        "급식 종류 선택",
+        "에너지 보충 타임",
         options=["전체 보기", "중식만 보기", "석식만 보기"],
         index=0,
         horizontal=True,
@@ -187,7 +243,6 @@ with col_filter:
 
 
 def fetch_monthly_meals(key, ofcdc_code, schul_code, yr, mo):
-    """선택한 월의 1일부터 말일까지의 급식을 조회합니다."""
     _, last_day = calendar.monthrange(yr, mo)
     from_ymd = f"{yr}{mo:02d}01"
     to_ymd = f"{yr}{mo:02d}{last_day:02d}"
@@ -208,16 +263,16 @@ def fetch_monthly_meals(key, ofcdc_code, schul_code, yr, mo):
 
 
 if "NEIS_KEY" not in st.secrets:
-    st.error("⚠️ Streamlit Secrets에 `NEIS_KEY`가 설정되어 있지 않습니다.")
+    st.error("🚨 [경고] NEIS_KEY 보안 파동 실패: Secrets를 확인하세요.")
     st.stop()
 
 neis_key = st.secrets["NEIS_KEY"]
 
 # -----------------------------------------------------------------------------
-# 🌷 Meal Data Fetch & Display
+# 🌠 MAIN DISPLAY
 # -----------------------------------------------------------------------------
 try:
-    with st.spinner(f"🌸 {year}년 {month}월 급식 정보를 불러오는 중..."):
+    with st.spinner("🌌 우주 데이터베이스에서 급식 데이터 워프 중..."):
         res_data = fetch_monthly_meals(
             neis_key, office_code, school_code, year, month
         )
@@ -248,7 +303,7 @@ try:
     month_cal = calendar.monthcalendar(year, month)
     weekdays_kr = ["월", "화", "수", "목", "금"]
 
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
 
     for week in month_cal:
         cols = st.columns(5)
@@ -270,47 +325,47 @@ try:
                     )
 
                     with st.container(border=True):
-                        # 날짜 헤더 & TODAY 배지
+                        # Header
                         if is_today:
                             st.markdown(
-                                f"**<span style='color:#d63384;'>{month}월 {day}일 ({weekdays_kr[i]})</span>** <span class='today-badge'>TODAY</span>",
+                                f"**<span style='color:#00f0ff; font-size:1.1rem;'>{month}.{day} ({weekdays_kr[i]})</span>** <span class='space-today-badge'>PRESENT</span>",
                                 unsafe_allow_html=True,
                             )
                         else:
                             st.markdown(
-                                f"**<span style='color:#495057;'>{month}월 {day}일 ({weekdays_kr[i]})</span>**",
+                                f"**<span style='color:#a0aec0; font-size:1rem;'>{month}.{day} ({weekdays_kr[i]})</span>**",
                                 unsafe_allow_html=True,
                             )
 
                         st.divider()
 
                         if not day_meals:
-                            st.caption("✨ 급식 없음 (휴업/방학)")
+                            st.caption("🌑 데이터 없음 (블랙홀/휴무)")
                         else:
                             displayed_count = 0
 
-                            # 중식 표시
+                            # 중식
                             if (
                                 meal_filter in ["전체 보기", "중식만 보기"]
                                 and "중식" in day_meals
                             ):
                                 displayed_count += 1
                                 cal_text = (
-                                    f" <span class='cal-text'>({day_meals['중식']['cal']})</span>"
+                                    f" <span class='energy-badge'>⚡ {day_meals['중식']['cal']}</span>"
                                     if day_meals["중식"]["cal"]
                                     else ""
                                 )
                                 st.markdown(
-                                    f"<span class='meal-title-lunch'>🍱 중식</span>{cal_text}",
+                                    f"<span class='lunch-title'>🛸 중식</span> {cal_text}",
                                     unsafe_allow_html=True,
                                 )
                                 for dish in day_meals["중식"]["dishes"]:
                                     st.markdown(
-                                        f"<span style='font-size:0.85rem; color:#4a4a4a;'>• {dish}</span>",
+                                        f"<div class='dish-item'>✨ {dish}</div>",
                                         unsafe_allow_html=True,
                                     )
 
-                            # 석식 표시
+                            # 석식
                             if (
                                 meal_filter in ["전체 보기", "석식만 보기"]
                                 and "석식" in day_meals
@@ -322,39 +377,19 @@ try:
                                 ):
                                     st.write("")
                                 cal_text = (
-                                    f" <span class='cal-text'>({day_meals['석식']['cal']})</span>"
+                                    f" <span class='energy-badge'>⚡ {day_meals['석식']['cal']}</span>"
                                     if day_meals["석식"]["cal"]
                                     else ""
                                 )
                                 st.markdown(
-                                    f"<span class='meal-title-dinner'>🌙 석식</span>{cal_text}",
+                                    f"<span class='dinner-title'>🌙 석식</span> {cal_text}",
                                     unsafe_allow_html=True,
                                 )
                                 for dish in day_meals["석식"]["dishes"]:
                                     st.markdown(
-                                        f"<span style='font-size:0.85rem; color:#4a4a4a;'>• {dish}</span>",
+                                        f"<div class='dish-item'>🪐 {dish}</div>",
                                         unsafe_allow_html=True,
                                     )
-
-                            # 기타 식단 (조식 등)
-                            if meal_filter == "전체 보기":
-                                for m_type, meal_data in day_meals.items():
-                                    if m_type not in ["중식", "석식"]:
-                                        displayed_count += 1
-                                        cal_text = (
-                                            f" <span class='cal-text'>({meal_data['cal']})</span>"
-                                            if meal_data["cal"]
-                                            else ""
-                                        )
-                                        st.markdown(
-                                            f"<span class='meal-title-other'>🍴 {m_type}</span>{cal_text}",
-                                            unsafe_allow_html=True,
-                                        )
-                                        for dish in meal_data["dishes"]:
-                                            st.markdown(
-                                                f"<span style='font-size:0.85rem; color:#4a4a4a;'>• {dish}</span>",
-                                                unsafe_allow_html=True,
-                                            )
 
                             if displayed_count == 0:
                                 st.caption("해당 식단 없음")
@@ -363,8 +398,6 @@ try:
             st.write("")
 
 except requests.exceptions.RequestException as e:
-    st.error(
-        f"⚠️ 나이스 API 통신 오류: 네트워크 상태를 확인해 주세요. ({e})"
-    )
+    st.error(f"📡 서킷 연결 오류: 우주 통신망 차단됨 ({e})")
 except Exception as e:
-    st.error(f"⚠️ 화면 구성 중 오류가 발생했습니다: {e}")
+    st.error(f"💥 시공간 왜곡 발생: {e}")
