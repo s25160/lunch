@@ -4,9 +4,102 @@ import re
 import requests
 import streamlit as st
 
-st.set_page_config(page_title="월간 학교 급식 달력", page_icon="📅", layout="wide")
-st.title("📅 우리 학교 월간 급식 달력")
-st.caption("선택한 월의 급식 메뉴를 주간 달력 형태로 한눈에 확인합니다.")
+st.set_page_config(page_title="핑크빛 학교 급식 달력", page_icon="🌸", layout="wide")
+
+# -----------------------------------------------------------------------------
+# 🌸 Pink Theme Custom CSS Injection
+# -----------------------------------------------------------------------------
+pink_theme_css = """
+<style>
+    /* 전체 배경 */
+    .stApp {
+        background: linear-gradient(135deg, #fff5f7 0%, #fdebed 100%);
+        font-family: 'Pretendard', sans-serif;
+    }
+    
+    /* 사이드바 스타일링 */
+    [data-testid="stSidebar"] {
+        background-color: #fff0f3 !important;
+        border-right: 1px solid #ffccd5;
+    }
+    
+    /* 타이틀 및 헤더 핑크 톤 설정 */
+    h1 {
+        color: #d63384 !important;
+        font-weight: 800 !important;
+        text-shadow: 1px 1px 2px #ffc0cb;
+    }
+    h2, h3, h4 {
+        color: #e64980 !important;
+    }
+    
+    /* 급식 카드 (Streamlit Container) 핑크 디자인 */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #ffffff;
+        border: 2px solid #ffccd5 !important;
+        border-radius: 16px !important;
+        box-shadow: 0px 4px 12px rgba(255, 182, 193, 0.25);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    [data-testid="stVerticalBlockBorderWrapper"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 6px 16px rgba(255, 105, 180, 0.3);
+        border-color: #ff85a1 !important;
+    }
+
+    /* TODAY 배지 핑크 디자인 */
+    .today-badge {
+        background-color: #ff6b8b;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(255, 107, 139, 0.4);
+    }
+
+    /* 식단 분류 타이틀 (중식 / 석식 등) */
+    .meal-title-lunch {
+        color: #ff477e;
+        font-weight: bold;
+        font-size: 0.95rem;
+    }
+    .meal-title-dinner {
+        color: #b5179e;
+        font-weight: bold;
+        font-size: 0.95rem;
+    }
+    .meal-title-other {
+        color: #f72585;
+        font-weight: bold;
+        font-size: 0.95rem;
+    }
+
+    /* 칼로리 텍스트 스타일 */
+    .cal-text {
+        font-size: 0.8rem;
+        color: #ff85a1;
+        font-weight: 500;
+    }
+
+    /* 구분선 컬러 */
+    hr {
+        border-color: #ffccd5 !important;
+    }
+
+    /* 라디오 버튼 / 토글 / 입력을 핑크 Accent로 강조 */
+    div[data-baseweb="radio"] div {
+        color: #d63384 !important;
+    }
+</style>
+"""
+st.markdown(pink_theme_css, unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 🌸 UI Header
+# -----------------------------------------------------------------------------
+st.title("🌸 우리 학교 핑크 급식 달력")
+st.caption("선택한 월의 급식 메뉴를 달콤한 핑크 테마 달력으로 한눈에 확인해보세요 💕")
 
 ALLERGY_MAP = {
     1: "난류",
@@ -41,13 +134,16 @@ def replace_allergy_codes(dish_text, convert_to_text=True):
         nums = re.findall(r"\d+", raw)
         allergens = [ALLERGY_MAP[int(n)] for n in nums if int(n) in ALLERGY_MAP]
         if allergens:
-            return f" :orange[[{', '.join(allergens)}]]"
+            return f" <span style='color:#ff6584; font-size:0.8rem;'>[{', '.join(allergens)}]</span>"
         return raw
 
     pattern = r"\(?(\d+\.)+\)?"
     return re.sub(pattern, convert_match, dish_text)
 
 
+# -----------------------------------------------------------------------------
+# 🎀 Sidebar Settings
+# -----------------------------------------------------------------------------
 st.sidebar.header("⚙️ 학교 정보 설정")
 office_code = st.sidebar.text_input(
     "시도교육청코드", value="T10", help="기본값: 제주특별자치도교육청(T10)"
@@ -61,13 +157,16 @@ st.sidebar.subheader("🍽️ 알레르기 표시 설정")
 show_allergen_names = st.sidebar.toggle(
     "알레르기 식품명으로 변환",
     value=True,
-    help="체크 시 숫자(예: 1. 5.) 대신 [난류, 대두] 형태로 변환하여 표시합니다.",
+    help="체크 시 숫자 대신 [난류, 대두] 형태로 변환하여 표시합니다.",
 )
 
 with st.sidebar.expander("📖 나이스 알레르기 번호 안내표"):
     table_md = "\n".join([f"- **{k}번**: {v}" for k, v in ALLERGY_MAP.items()])
     st.markdown(table_md)
 
+# -----------------------------------------------------------------------------
+# 🗓️ Controls & Filters
+# -----------------------------------------------------------------------------
 today = datetime.date.today()
 col_y, col_m, col_filter = st.columns([1, 1, 2])
 with col_y:
@@ -114,8 +213,11 @@ if "NEIS_KEY" not in st.secrets:
 
 neis_key = st.secrets["NEIS_KEY"]
 
+# -----------------------------------------------------------------------------
+# 🌷 Meal Data Fetch & Display
+# -----------------------------------------------------------------------------
 try:
-    with st.spinner(f"{year}년 {month}월 급식 정보를 불러오는 중..."):
+    with st.spinner(f"🌸 {year}년 {month}월 급식 정보를 불러오는 중..."):
         res_data = fetch_monthly_meals(
             neis_key, office_code, school_code, year, month
         )
@@ -127,7 +229,7 @@ try:
             ymd = row.get("MLSV_YMD")
             meal_type = row.get("MMEAL_SC_NM", "급식")
             dish = row.get("DDISH_NM", "")
-            cal_info = row.get("CAL_INFO", "").strip()  # 총칼로리 정보 추출 (예: "650.5 kcal")
+            cal_info = row.get("CAL_INFO", "").strip()
 
             formatted_dish = replace_allergy_codes(
                 dish, convert_to_text=show_allergen_names
@@ -138,7 +240,6 @@ try:
                 if d.strip()
             ]
 
-            # 메뉴 리스트와 칼로리 정보를 객체 형태로 저장
             meal_dict.setdefault(ymd, {})[meal_type] = {
                 "dishes": dish_lines,
                 "cal": cal_info,
@@ -169,19 +270,22 @@ try:
                     )
 
                     with st.container(border=True):
+                        # 날짜 헤더 & TODAY 배지
                         if is_today:
                             st.markdown(
-                                f"**{month}월 {day}일 ({weekdays_kr[i]})** :orange-background[**TODAY**]"
+                                f"**<span style='color:#d63384;'>{month}월 {day}일 ({weekdays_kr[i]})</span>** <span class='today-badge'>TODAY</span>",
+                                unsafe_allow_html=True,
                             )
                         else:
                             st.markdown(
-                                f"**{month}월 {day}일 ({weekdays_kr[i]})**"
+                                f"**<span style='color:#495057;'>{month}월 {day}일 ({weekdays_kr[i]})</span>**",
+                                unsafe_allow_html=True,
                             )
 
                         st.divider()
 
                         if not day_meals:
-                            st.caption("급식 없음 (휴업/방학)")
+                            st.caption("✨ 급식 없음 (휴업/방학)")
                         else:
                             displayed_count = 0
 
@@ -192,17 +296,17 @@ try:
                             ):
                                 displayed_count += 1
                                 cal_text = (
-                                    f" <span style='font-size:0.8rem; color:gray;'>({day_meals['중식']['cal']})</span>"
+                                    f" <span class='cal-text'>({day_meals['중식']['cal']})</span>"
                                     if day_meals["중식"]["cal"]
                                     else ""
                                 )
                                 st.markdown(
-                                    f":blue[**🥣 중식**]{cal_text}",
+                                    f"<span class='meal-title-lunch'>🍱 중식</span>{cal_text}",
                                     unsafe_allow_html=True,
                                 )
                                 for dish in day_meals["중식"]["dishes"]:
                                     st.markdown(
-                                        f"<span style='font-size:0.85rem;'>• {dish}</span>",
+                                        f"<span style='font-size:0.85rem; color:#4a4a4a;'>• {dish}</span>",
                                         unsafe_allow_html=True,
                                     )
 
@@ -218,37 +322,37 @@ try:
                                 ):
                                     st.write("")
                                 cal_text = (
-                                    f" <span style='font-size:0.8rem; color:gray;'>({day_meals['석식']['cal']})</span>"
+                                    f" <span class='cal-text'>({day_meals['석식']['cal']})</span>"
                                     if day_meals["석식"]["cal"]
                                     else ""
                                 )
                                 st.markdown(
-                                    f":red[**🌙 석식**]{cal_text}",
+                                    f"<span class='meal-title-dinner'>🌙 석식</span>{cal_text}",
                                     unsafe_allow_html=True,
                                 )
                                 for dish in day_meals["석식"]["dishes"]:
                                     st.markdown(
-                                        f"<span style='font-size:0.85rem;'>• {dish}</span>",
+                                        f"<span style='font-size:0.85rem; color:#4a4a4a;'>• {dish}</span>",
                                         unsafe_allow_html=True,
                                     )
 
-                            # 조식 등 기타 식단 표시
+                            # 기타 식단 (조식 등)
                             if meal_filter == "전체 보기":
                                 for m_type, meal_data in day_meals.items():
                                     if m_type not in ["중식", "석식"]:
                                         displayed_count += 1
                                         cal_text = (
-                                            f" <span style='font-size:0.8rem; color:gray;'>({meal_data['cal']})</span>"
+                                            f" <span class='cal-text'>({meal_data['cal']})</span>"
                                             if meal_data["cal"]
                                             else ""
                                         )
                                         st.markdown(
-                                            f":green[**🍴 {m_type}**]{cal_text}",
+                                            f"<span class='meal-title-other'>🍴 {m_type}</span>{cal_text}",
                                             unsafe_allow_html=True,
                                         )
                                         for dish in meal_data["dishes"]:
                                             st.markdown(
-                                                f"<span style='font-size:0.85rem;'>• {dish}</span>",
+                                                f"<span style='font-size:0.85rem; color:#4a4a4a;'>• {dish}</span>",
                                                 unsafe_allow_html=True,
                                             )
 
